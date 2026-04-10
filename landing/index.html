@@ -6,9 +6,9 @@
     <meta name="color-scheme" content="dark" />
     <meta
       name="description"
-      content="Crisis Command — AI-powered emergency response simulation platform."
+      content="Terra Guard — AI-powered emergency response simulation platform."
     />
-    <title>Crisis Command — Emergency Response Simulation</title>
+    <title>Terra Guard — Emergency Response Simulation</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1622,14 +1622,14 @@
     <!-- [2] NAV -->
     <header class="nav" id="top">
       <div class="container nav-inner">
-        <a class="logo" href="#top">CRISIS COMMAND</a>
+        <a class="logo" href="#top">TERRA GUARD</a>
         <nav class="nav-links" aria-label="Primary">
           <a href="#how-it-works" data-section="how-it-works">HOW IT WORKS</a>
           <a href="#roles" data-section="roles">ROLES</a>
           <a href="#scenarios" data-section="scenarios">SCENARIOS</a>
           <a href="#memory" data-section="memory">MEMORY</a>
         </nav>
-        <a class="btn-enter" href="#" data-launch>ENTER SIMULATION</a>
+        <a class="btn-enter" href="/select" data-launch>ENTER SIMULATION</a>
       </div>
     </header>
 
@@ -1664,7 +1664,7 @@
               </div>
 
               <div class="hero-cta">
-                <a class="btn-primary" href="#" data-launch>▶ ENTER SIMULATION</a>
+                <a class="btn-primary" href="/select" data-launch>▶ ENTER SIMULATION</a>
                 <a class="btn-secondary" href="#how-it-works">WATCH DEMO →</a>
               </div>
 
@@ -1799,7 +1799,7 @@
               <div class="vs"><span>VS</span></div>
 
               <div class="newway">
-                <div class="label">CRISIS COMMAND</div>
+                <div class="label">TERRA GUARD</div>
                 <div class="decision">
                   AFTERSHOCK IN 90 SECONDS. Grid C4 collapsing. 3 units
                   available. 847 lives at risk. DECIDE.
@@ -2242,7 +2242,7 @@
             before it actually matters.
           </p>
           <div class="buttons">
-            <a class="btn-primary" href="#" data-launch>▶ START SIMULATION — FREE</a>
+            <a class="btn-primary" href="/select" data-launch>▶ START SIMULATION — FREE</a>
             <a class="btn-secondary" href="#roles">EXPLORE ROLES →</a>
           </div>
           <div class="note">No signup. No download. Runs in your browser.</div>
@@ -2254,7 +2254,7 @@
         <div class="container">
           <div class="foot-grid reveal">
             <div>
-              <div class="foot-logo">CRISIS COMMAND</div>
+              <div class="foot-logo">TERRA GUARD</div>
               <div class="foot-desc">
                 AI-powered disaster simulation. Built for the next generation of
                 emergency responders.
@@ -2288,7 +2288,7 @@
 
           <div class="foot-bottom">
             <div class="copyright">
-              © 2025 Crisis Command. Built for emergency preparedness.
+              © 2025 Terra Guard. Built for emergency preparedness.
             </div>
             <div class="status">
               <span class="dotlive" aria-hidden="true"></span>
@@ -2491,8 +2491,8 @@
           document.querySelectorAll("[data-launch]").forEach((el) => {
             el.addEventListener("click", (ev) => {
               ev.preventDefault();
-              console.log("Launching simulation...");
-              // If/when deployed, swap to: window.location.href = "/index.html";
+              // Smooth handoff into the main app (Vite/Netlify/GitHub Pages).
+              window.location.href = "/select";
             });
           });
         }
