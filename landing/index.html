@@ -1629,7 +1629,7 @@
           <a href="#scenarios" data-section="scenarios">SCENARIOS</a>
           <a href="#memory" data-section="memory">MEMORY</a>
         </nav>
-        <a class="btn-enter" href="#" data-launch>ENTER SIMULATION</a>
+        <a class="btn-enter" href="/select" data-launch>ENTER SIMULATION</a>
       </div>
     </header>
 
@@ -1664,7 +1664,7 @@
               </div>
 
               <div class="hero-cta">
-                <a class="btn-primary" href="#" data-launch>▶ ENTER SIMULATION</a>
+                <a class="btn-primary" href="/select" data-launch>▶ ENTER SIMULATION</a>
                 <a class="btn-secondary" href="#how-it-works">WATCH DEMO →</a>
               </div>
 
@@ -2242,7 +2242,7 @@
             before it actually matters.
           </p>
           <div class="buttons">
-            <a class="btn-primary" href="#" data-launch>▶ START SIMULATION — FREE</a>
+            <a class="btn-primary" href="/select" data-launch>▶ START SIMULATION — FREE</a>
             <a class="btn-secondary" href="#roles">EXPLORE ROLES →</a>
           </div>
           <div class="note">No signup. No download. Runs in your browser.</div>
@@ -2491,8 +2491,8 @@
           document.querySelectorAll("[data-launch]").forEach((el) => {
             el.addEventListener("click", (ev) => {
               ev.preventDefault();
-              console.log("Launching simulation...");
-              // If/when deployed, swap to: window.location.href = "/index.html";
+              // Smooth handoff into the main app (Vite/Netlify/GitHub Pages).
+              window.location.href = "/select";
             });
           });
         }

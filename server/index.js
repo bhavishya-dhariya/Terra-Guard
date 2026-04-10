@@ -80,6 +80,9 @@ app.post("/api/claude/stream", async (req, res) => {
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("X-Accel-Buffering", "no");
+  // Ensure headers are sent immediately (so clients don't hang waiting for first chunk)
+  if (typeof res.flushHeaders === "function") res.flushHeaders();
+  res.write(":\n\n");
 
   const { messages, system } = req.body || {};
   if (!geminiKey) {
@@ -113,14 +116,38 @@ app.post("/api/claude/stream", async (req, res) => {
 
     const result = await model.generateContentStream({
       contents: toGeminiContents(messages),
+      generationConfig: { responseMimeType: "application/json", temperature: 0.7 },
     });
 
-    for await (const chunk of result.stream) {
-      if (closed) break;
-      const text = chunk.text();
-      if (!text) continue;
-      // Send in an Anthropic-like envelope that our client already understands.
+    const iter = result.stream[Symbol.asyncIterator]();
+    const first = await Promise.race([
+      iter.next(),
+      new Promise((resolve) => setTimeout(() => resolve({ timeout: true }), 6000)),
+    ]);
+
+    if (first && first.timeout) {
+      // Fallback: if streaming takes too long to produce first bytes, use non-streaming generation.
+      const out = await model.generateContent({
+        contents: toGeminiContents(messages),
+        generationConfig: { responseMimeType: "application/json", temperature: 0.7 },
+      });
+      const text = out.response.text() || "";
       res.write(`data: ${JSON.stringify({ delta: { text } })}\n\n`);
+    } else {
+      const firstChunk = first;
+      if (firstChunk && firstChunk.value && !firstChunk.done) {
+        const t = firstChunk.value.text();
+        if (t) res.write(`data: ${JSON.stringify({ delta: { text: t } })}\n\n`);
+      }
+
+      while (true) {
+        if (closed) break;
+        const next = await iter.next();
+        if (next.done) break;
+        const text = next.value.text();
+        if (!text) continue;
+        res.write(`data: ${JSON.stringify({ delta: { text } })}\n\n`);
+      }
     }
   } catch (err) {
     const message = safeErrorMessage(err);
@@ -158,9 +185,15 @@ app.post("/api/claude/complete", async (req, res) => {
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash",
       systemInstruction: { role: "system", parts: [{ text: system }] },
-      generationConfig: { temperature: 0.5 },
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.5,
+      },
     });
-    const out = await model.generateContent({ contents: toGeminiContents(messages) });
+    const out = await model.generateContent({
+      contents: toGeminiContents(messages),
+      generationConfig: { responseMimeType: "application/json", temperature: 0.5 },
+    });
     const text = out.response.text() || "";
     return res.json({ text, raw: null });
   } catch (err) {

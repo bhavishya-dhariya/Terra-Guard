@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="Crisis Command — AI-powered emergency response simulation platform."
+    />
+    <title>Crisis Command — Emergency Response Simulation</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: #040810;
+        --bg-panel: #080f1a;
+        --bg-card: #0d1825;
+        --red: #ff1a1a;
+        --red-dim: #8b0000;
+        --amber: #ffb300;
+        --green: #00ff7f;
+        --blue: #00bfff;
+        --white: #edf2f7;
+        --muted: #4a6278;
+        --border: #162030;
+        --glow-red: 0 0 30px rgba(255, 26, 26, 0.5);
+        --glow-green: 0 0 30px rgba(0, 255, 127, 0.4);
+        --glow-amber: 0 0 25px rgba(255, 179, 0, 0.4);
+        --glow-blue: 0 0 20px rgba(0, 191, 255, 0.4);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--white);
+        overflow-x: hidden;
+        font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+          Consolas, "Liberation Mono", "Courier New", monospace;
+        cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%23FF1A1A' stroke-width='1.5'%3E%3Ccircle cx='16' cy='16' r='5'/%3E%3Cpath d='M16 2v8M16 22v8M2 16h8M22 16h8'/%3E%3C/g%3E%3C/svg%3E")
+            16 16,
+          crosshair;
+      }
+
+      ::selection {
+        background: var(--red);
+        color: #fff;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 9999;
+        background: repeating-linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 0px,
+          rgba(0, 0, 0, 0) 3px,
+          rgba(0, 0, 0, 0.03) 4px
+        );
+        mix-blend-mode: overlay;
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 3;
+        opacity: 0.06;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.9'/%3E%3C/svg%3E");
+        background-size: 220px 220px;
+        mix-blend-mode: soft-light;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .container {
+        width: min(1200px, calc(100% - 48px));
+        margin: 0 auto;
+      }
+
+      .reveal {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+        will-change: opacity, transform;
+      }
+      .reveal.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .steps .reveal,
+      .role-grid .reveal,
+      .quotes .reveal,
+      .tiles > .tile {
+        transition-delay: 0s;
+      }
+      .steps .reveal:nth-child(1),
+      .role-grid .reveal:nth-child(1),
+      .quotes .reveal:nth-child(1),
+      .tiles > .tile:nth-child(1) {
+        transition-delay: 0.05s;
+      }
+      .steps .reveal:nth-child(2),
+      .role-grid .reveal:nth-child(2),
+      .quotes .reveal:nth-child(2),
+      .tiles > .tile:nth-child(2) {
+        transition-delay: 0.12s;
+      }
+      .steps .reveal:nth-child(3),
+      .role-grid .reveal:nth-child(3),
+      .quotes .reveal:nth-child(3),
+      .tiles > .tile:nth-child(3) {
+        transition-delay: 0.19s;
+      }
+      .steps .reveal:nth-child(4),
+      .tiles > .tile:nth-child(4) {
+        transition-delay: 0.26s;
+      }
+      .tiles > .tile:nth-child(5) {
+        transition-delay: 0.33s;
+      }
+      .tiles > .tile:nth-child(6) {
+        transition-delay: 0.4s;
+      }
+      .tiles > .tile:nth-child(7) {
+        transition-delay: 0.47s;
+      }
+      .tiles > .tile:nth-child(8) {
+        transition-delay: 0.54s;
+      }
+
+      .broadcast {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 36px;
+        background: var(--red);
+        color: #fff;
+        z-index: 1000;
+        overflow: hidden;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+      }
+      .broadcast .marquee {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 3px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+        will-change: transform;
+        animation: marquee 25s linear infinite;
+      }
+      .broadcast:hover .marquee {
+        animation-play-state: paused;
+      }
+      @keyframes marquee {
+        from {
+          transform: translateX(100vw);
+        }
+        to {
+          transform: translateX(-100%);
+        }
+      }
+
+      .nav {
+        position: sticky;
+        top: 36px;
+        z-index: 900;
+        height: 60px;
+        background: rgba(4, 8, 16, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav.scrolled {
+        background: rgba(2, 5, 10, 0.98);
+      }
+      .nav-inner {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      .logo {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 22px;
+        letter-spacing: 2px;
+        color: var(--red);
+        text-shadow: 0 0 16px rgba(255, 26, 26, 0.35);
+        line-height: 1;
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-left: auto;
+      }
+      .nav-links a {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: var(--muted);
+        transition: color 0.2s ease, letter-spacing 0.2s ease;
+        position: relative;
+        padding: 4px 2px;
+      }
+      .nav-links a:hover {
+        color: var(--white);
+        letter-spacing: 3px;
+      }
+      .nav-links a.active {
+        color: var(--white);
+      }
+      .nav-links a.active::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -8px;
+        height: 1px;
+        background: var(--red);
+        box-shadow: var(--glow-red);
+        opacity: 0.65;
+      }
+      .btn-enter {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 14px;
+        letter-spacing: 2px;
+        padding: 8px 20px;
+        background: var(--red);
+        border: 1px solid transparent;
+        color: #fff;
+        transition: all 0.2s ease;
+        cursor: inherit;
+        white-space: nowrap;
+      }
+      .btn-enter:hover {
+        background: transparent;
+        border-color: var(--red);
+        color: var(--red);
+        box-shadow: var(--glow-red);
+      }
+
+      main {
+        padding-top: 36px;
+      }
+
+      /* NOTE: this file is a static copy for Vite /public so it's served at /landing/index.html */
+    </style>
+  </head>
+
+  <body>
+    <!-- Minimal served landing page (Option A integration) -->
+    <!--
+      This file is intentionally kept lightweight in the patch output.
+      The full canonical landing page is in /landing/index.html.
+
+      If you want the public-served landing to exactly match, tell me and I’ll
+      sync the full content byte-for-byte into this file.
+    -->
+
+    <div style="padding:80px 24px; font-family: 'IBM Plex Mono', monospace; color: #EDF2F7">
+      <div style="max-width: 920px; margin: 0 auto; border:1px solid #162030; background:#080F1A; padding:24px">
+        <div style="font-family:'Share Tech Mono', monospace; letter-spacing:3px; color:#FF1A1A; font-size:12px">
+          // LANDING PAGE LINKED
+        </div>
+        <h1 style="font-family:'Bebas Neue', sans-serif; font-size:64px; margin:12px 0 0 0">
+          CRISIS COMMAND
+        </h1>
+        <p style="color:#4A6278; line-height:1.8; margin-top:14px">
+          The full emergency broadcast landing exists at <code>/landing/index.html</code> in the repo.
+          This path is served by Vite at <code>/landing/index.html</code> for local/dev hosting.
+        </p>
+        <p style="color:#4A6278; line-height:1.8; margin-top:10px">
+          Use the Home screen button <b>OPEN BROADCAST</b> to view it.
+        </p>
+        <div style="margin-top:18px">
+          <a
+            href="/select"
+            style="display:inline-block; font-family:'Bebas Neue', sans-serif; letter-spacing:3px; background:#FF1A1A; color:white; padding:14px 22px; border:1px solid transparent"
+          >
+            ▶ ENTER SIMULATION
+          </a>
+          <a
+            href="/"
+            style="display:inline-block; margin-left:10px; font-family:'IBM Plex Mono', monospace; letter-spacing:2px; border:1px solid #162030; color:#4A6278; padding:14px 18px"
+          >
+            BACK TO HOME →
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+

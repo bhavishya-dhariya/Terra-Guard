@@ -99,6 +99,17 @@ export default function HomePage() {
           >
             VIEW LEADERBOARD
           </Button>
+          <a
+            className="w-full sm:w-auto"
+            href="/landing/index.html"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Open emergency broadcast landing page"
+          >
+            <Button variant="ghost" className="w-full sm:w-auto">
+              OPEN BROADCAST
+            </Button>
+          </a>
         </div>
 
         <div className="mt-12 flex items-center gap-3 font-mono text-xs tracking-[0.28em] text-[var(--accent-red)]">
