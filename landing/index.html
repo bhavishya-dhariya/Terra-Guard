@@ -1,0 +1,2513 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="Terra Guard — AI-powered emergency response simulation platform."
+    />
+    <title>Terra Guard — Emergency Response Simulation</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: #040810;
+        --bg-panel: #080f1a;
+        --bg-card: #0d1825;
+        --red: #ff1a1a;
+        --red-dim: #8b0000;
+        --amber: #ffb300;
+        --green: #00ff7f;
+        --blue: #00bfff;
+        --white: #edf2f7;
+        --muted: #4a6278;
+        --border: #162030;
+        --glow-red: 0 0 30px rgba(255, 26, 26, 0.5);
+        --glow-green: 0 0 30px rgba(0, 255, 127, 0.4);
+        --glow-amber: 0 0 25px rgba(255, 179, 0, 0.4);
+        --glow-blue: 0 0 20px rgba(0, 191, 255, 0.4);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--white);
+        overflow-x: hidden;
+        font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+          Consolas, "Liberation Mono", "Courier New", monospace;
+        cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%23FF1A1A' stroke-width='1.5'%3E%3Ccircle cx='16' cy='16' r='5'/%3E%3Cpath d='M16 2v8M16 22v8M2 16h8M22 16h8'/%3E%3C/g%3E%3C/svg%3E")
+            16 16,
+          crosshair;
+      }
+
+      ::selection {
+        background: var(--red);
+        color: #fff;
+      }
+
+      /* Scanlines overlay */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 9999;
+        background: repeating-linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 0px,
+          rgba(0, 0, 0, 0) 3px,
+          rgba(0, 0, 0, 0.03) 4px
+        );
+        mix-blend-mode: overlay;
+      }
+
+      /* Subtle noise texture (SVG turbulence as a tiny tile) */
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 3;
+        opacity: 0.06;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.9'/%3E%3C/svg%3E");
+        background-size: 220px 220px;
+        mix-blend-mode: soft-light;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .container {
+        width: min(1200px, calc(100% - 48px));
+        margin: 0 auto;
+      }
+
+      .reveal {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+        will-change: opacity, transform;
+      }
+      .reveal.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Stagger reveals inside common grids */
+      .steps .reveal,
+      .role-grid .reveal,
+      .quotes .reveal,
+      .tiles > .tile {
+        transition-delay: 0s;
+      }
+      .steps .reveal:nth-child(1),
+      .role-grid .reveal:nth-child(1),
+      .quotes .reveal:nth-child(1),
+      .tiles > .tile:nth-child(1) {
+        transition-delay: 0.05s;
+      }
+      .steps .reveal:nth-child(2),
+      .role-grid .reveal:nth-child(2),
+      .quotes .reveal:nth-child(2),
+      .tiles > .tile:nth-child(2) {
+        transition-delay: 0.12s;
+      }
+      .steps .reveal:nth-child(3),
+      .role-grid .reveal:nth-child(3),
+      .quotes .reveal:nth-child(3),
+      .tiles > .tile:nth-child(3) {
+        transition-delay: 0.19s;
+      }
+      .steps .reveal:nth-child(4),
+      .tiles > .tile:nth-child(4) {
+        transition-delay: 0.26s;
+      }
+      .tiles > .tile:nth-child(5) {
+        transition-delay: 0.33s;
+      }
+      .tiles > .tile:nth-child(6) {
+        transition-delay: 0.4s;
+      }
+      .tiles > .tile:nth-child(7) {
+        transition-delay: 0.47s;
+      }
+      .tiles > .tile:nth-child(8) {
+        transition-delay: 0.54s;
+      }
+
+      /* [1] Emergency Broadcast Bar */
+      .broadcast {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 36px;
+        background: var(--red);
+        color: #fff;
+        z-index: 1000;
+        overflow: hidden;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+      }
+      .broadcast .marquee {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 3px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+        will-change: transform;
+        animation: marquee 25s linear infinite;
+      }
+      .broadcast:hover .marquee {
+        animation-play-state: paused;
+      }
+      @keyframes marquee {
+        from {
+          transform: translateX(100vw);
+        }
+        to {
+          transform: translateX(-100%);
+        }
+      }
+
+      /* [2] Nav */
+      .nav {
+        position: sticky;
+        top: 36px;
+        z-index: 900;
+        height: 60px;
+        background: rgba(4, 8, 16, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav.scrolled {
+        background: rgba(2, 5, 10, 0.98);
+      }
+      .nav-inner {
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+      .logo {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 22px;
+        letter-spacing: 2px;
+        color: var(--red);
+        text-shadow: 0 0 16px rgba(255, 26, 26, 0.35);
+        line-height: 1;
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-left: auto;
+      }
+      .nav-links a {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: var(--muted);
+        transition: color 0.2s ease, letter-spacing 0.2s ease;
+        position: relative;
+        padding: 4px 2px;
+      }
+      .nav-links a:hover {
+        color: var(--white);
+        letter-spacing: 3px;
+      }
+      .nav-links a.active {
+        color: var(--white);
+      }
+      .nav-links a.active::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -8px;
+        height: 1px;
+        background: var(--red);
+        box-shadow: var(--glow-red);
+        opacity: 0.65;
+      }
+      .btn-enter {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 14px;
+        letter-spacing: 2px;
+        padding: 8px 20px;
+        background: var(--red);
+        border: 1px solid transparent;
+        color: #fff;
+        transition: all 0.2s ease;
+        cursor: inherit;
+        white-space: nowrap;
+      }
+      .btn-enter:hover {
+        background: transparent;
+        border-color: var(--red);
+        color: var(--red);
+        box-shadow: var(--glow-red);
+      }
+
+      main {
+        padding-top: 36px; /* make room for fixed broadcast bar */
+      }
+
+      /* [3] Hero */
+      .hero {
+        position: relative;
+        height: 100vh;
+        overflow: hidden;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .hero-bg {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background-image: linear-gradient(
+            rgba(22, 32, 48, 0.14) 1px,
+            transparent 1px
+          ),
+          linear-gradient(90deg, rgba(22, 32, 48, 0.14) 1px, transparent 1px);
+        background-size: 60px 60px;
+        opacity: 0.9;
+      }
+
+      .orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(40px);
+        transform: translateZ(0);
+      }
+      .orb.red {
+        width: 600px;
+        height: 600px;
+        background: var(--red);
+        top: -180px;
+        left: -220px;
+        opacity: 0.06;
+        animation: pulse 4s ease-in-out infinite;
+      }
+      .orb.blue {
+        width: 400px;
+        height: 400px;
+        background: var(--blue);
+        bottom: -160px;
+        right: -180px;
+        opacity: 0.05;
+        animation: pulse 4s ease-in-out infinite;
+        animation-delay: 1.2s;
+      }
+      .orb.amber {
+        width: 300px;
+        height: 300px;
+        background: var(--amber);
+        top: 42%;
+        right: 16%;
+        opacity: 0.04;
+        animation: pulse 4s ease-in-out infinite;
+        animation-delay: 0.6s;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .radar {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        z-index: 0;
+        opacity: 0.08;
+      }
+      .radar .disk {
+        width: 500px;
+        height: 500px;
+        border-radius: 50%;
+        position: relative;
+        border: 1px solid rgba(237, 242, 247, 0.12);
+        box-shadow: 0 0 0 1px rgba(22, 32, 48, 0.45) inset;
+        overflow: hidden;
+      }
+      .radar .disk::before {
+        content: "";
+        position: absolute;
+        inset: -40%;
+        background: conic-gradient(
+          from 0deg,
+          rgba(0, 255, 127, 0) 0deg,
+          rgba(0, 255, 127, 0.12) 18deg,
+          rgba(0, 255, 127, 0) 45deg
+        );
+        animation: sweep 4s linear infinite;
+        transform-origin: 50% 50%;
+      }
+      .radar .disk::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at center,
+          rgba(0, 255, 127, 0.22) 0%,
+          rgba(0, 255, 127, 0.05) 35%,
+          rgba(0, 0, 0, 0) 65%
+        );
+        mix-blend-mode: screen;
+      }
+      @keyframes sweep {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .hero-inner {
+        position: relative;
+        z-index: 1;
+        height: calc(100vh - 60px); /* nav occupies flow; keep hero content centered */
+        display: grid;
+        align-items: center;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 42px;
+        align-items: center;
+      }
+
+      .hero-label {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 12px;
+        letter-spacing: 5px;
+        color: var(--red);
+        text-transform: uppercase;
+        opacity: 0;
+        transform: translateY(-10px);
+        animation: fadeUp 0.6s ease forwards;
+        animation-delay: 0.2s;
+      }
+      @keyframes fadeUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .hero-headline {
+        margin: 18px 0 0 0;
+        max-width: 900px;
+      }
+      .hero-line {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 120px;
+        line-height: 0.9;
+        margin: 0;
+        letter-spacing: 1px;
+        opacity: 0;
+        transform: translateX(-30px);
+        animation: fadeLeft 0.6s ease forwards;
+      }
+      .hero-line:nth-child(1) {
+        color: var(--white);
+        animation-delay: 0.4s;
+      }
+      .hero-line:nth-child(2) {
+        color: var(--red);
+        text-shadow: var(--glow-red);
+        animation-delay: 0.6s;
+      }
+      .hero-line:nth-child(3) {
+        color: transparent;
+        -webkit-text-stroke: 1px rgba(255, 255, 255, 0.3);
+        animation-delay: 0.8s;
+      }
+      @keyframes fadeLeft {
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .hero-sub {
+        margin-top: 18px;
+        max-width: 560px;
+        font-size: 16px;
+        color: var(--muted);
+        line-height: 1.7;
+        opacity: 0;
+        animation: fadeIn 0.6s ease forwards;
+        animation-delay: 1s;
+      }
+      @keyframes fadeIn {
+        to {
+          opacity: 1;
+        }
+      }
+
+      .hero-cta {
+        margin-top: 48px;
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        align-items: center;
+        opacity: 0;
+        transform: translateY(10px);
+        animation: fadeUp2 0.6s ease forwards;
+        animation-delay: 1.2s;
+      }
+      @keyframes fadeUp2 {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .btn-primary {
+        background: var(--red);
+        color: #fff;
+        border: none;
+        padding: 16px 40px;
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 18px;
+        letter-spacing: 3px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease,
+          filter 0.2s ease;
+        cursor: inherit;
+      }
+      .btn-primary:hover {
+        box-shadow: var(--glow-red);
+        transform: scale(1.02);
+        filter: saturate(1.1);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        padding: 16px 32px;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 13px;
+        transition: color 0.2s ease, border-color 0.2s ease;
+        cursor: inherit;
+      }
+      .btn-secondary:hover {
+        border-color: var(--white);
+        color: var(--white);
+      }
+
+      .hero-mini {
+        margin-top: 42px;
+        display: flex;
+        gap: 48px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .mini-stat {
+        display: grid;
+        gap: 4px;
+        min-width: 140px;
+        position: relative;
+        padding-right: 28px;
+      }
+      .mini-stat:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: 6px;
+        bottom: 6px;
+        width: 1px;
+        background: var(--border);
+      }
+      .mini-num {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 36px;
+        color: var(--green);
+        text-shadow: var(--glow-green);
+        line-height: 1;
+      }
+      .mini-label {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: var(--muted);
+      }
+
+      .terminal {
+        width: 320px;
+        background: var(--bg-panel);
+        border: 1px solid var(--border);
+        box-shadow: 0 0 60px rgba(0, 0, 0, 0.8);
+        position: absolute;
+        right: 5%;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2;
+      }
+      .term-top {
+        height: 34px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 12px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(2, 5, 10, 0.8);
+      }
+      .dots {
+        display: flex;
+        gap: 6px;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        opacity: 0.9;
+      }
+      .dot.red {
+        background: var(--red);
+      }
+      .dot.amber {
+        background: var(--amber);
+      }
+      .dot.green {
+        background: var(--green);
+      }
+      .term-label {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: var(--muted);
+      }
+      .term-body {
+        padding: 14px 14px 16px 14px;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 11px;
+        line-height: 1.55;
+      }
+      .term-line {
+        white-space: pre-wrap;
+      }
+      .term-line.amber {
+        color: var(--amber);
+      }
+      .term-line.red {
+        color: var(--red);
+      }
+      .term-line.green {
+        color: var(--green);
+      }
+      .term-line.white {
+        color: var(--white);
+      }
+      .blink {
+        animation: blink 1s steps(2, end) infinite;
+      }
+      @keyframes blink {
+        50% {
+          opacity: 0.15;
+        }
+      }
+      .cursor {
+        display: inline-block;
+        width: 10px;
+      }
+      .cursor.blink {
+        animation: blink 0.9s steps(2, end) infinite;
+      }
+
+      /* [4] Live Stats Ticker */
+      .ticker {
+        height: 56px;
+        background: var(--bg-panel);
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        overflow: hidden;
+      }
+      .ticker-row {
+        height: 28px;
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+        will-change: transform;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 1px;
+        user-select: none;
+      }
+      .ticker-row .track {
+        display: inline-flex;
+        gap: 18px;
+        padding-left: 100%;
+      }
+      .ticker-row.green {
+        color: var(--green);
+      }
+      .ticker-row.amber {
+        color: var(--amber);
+      }
+      .ticker-row.green .track {
+        animation: tickerL 30s linear infinite;
+      }
+      .ticker-row.amber .track {
+        animation: tickerR 30s linear infinite;
+      }
+      .ticker-row.paused .track {
+        animation-play-state: paused;
+      }
+      @keyframes tickerL {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-200%);
+        }
+      }
+      @keyframes tickerR {
+        from {
+          transform: translateX(-200%);
+        }
+        to {
+          transform: translateX(0);
+        }
+      }
+
+      /* Section shared */
+      section {
+        position: relative;
+      }
+      .eyebrow {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 4px;
+        color: var(--red);
+        text-transform: uppercase;
+      }
+      .h2 {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 72px;
+        line-height: 1;
+        margin: 14px 0 18px 0;
+        letter-spacing: 1px;
+      }
+      .p {
+        color: var(--muted);
+        line-height: 1.8;
+        font-size: 15px;
+        max-width: 520px;
+      }
+
+      /* [5] The Problem */
+      .problem {
+        padding: 120px 0;
+      }
+      .problem-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 56px;
+        align-items: start;
+      }
+      .callouts {
+        margin-top: 26px;
+        display: grid;
+        gap: 12px;
+      }
+      .callout {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .xmark {
+        color: var(--red);
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 20px;
+        line-height: 1;
+        margin-top: 1px;
+        text-shadow: var(--glow-red);
+      }
+
+      .compare {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        padding: 32px;
+      }
+      .compare .label {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 3px;
+        color: var(--muted);
+      }
+      .oldway {
+        opacity: 0.6;
+        filter: saturate(0.7);
+      }
+      .progress {
+        height: 10px;
+        background: rgba(237, 242, 247, 0.08);
+        border: 1px solid var(--border);
+        margin: 14px 0 10px 0;
+        position: relative;
+      }
+      .progress::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 32%;
+        background: rgba(237, 242, 247, 0.12);
+      }
+      .compare .mono {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 12px;
+        color: rgba(237, 242, 247, 0.6);
+        line-height: 1.65;
+      }
+      .vs {
+        display: grid;
+        place-items: center;
+        height: 34px;
+        margin: 14px 0;
+        position: relative;
+      }
+      .vs::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        height: 1px;
+        background: var(--border);
+      }
+      .vs span {
+        position: relative;
+        background: var(--bg-card);
+        padding: 0 10px;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 4px;
+        color: rgba(237, 242, 247, 0.55);
+      }
+      .newway {
+        border: 1px solid rgba(255, 26, 26, 0.35);
+        box-shadow: 0 0 0 1px rgba(255, 26, 26, 0.25) inset;
+        padding: 14px;
+      }
+      .newway .label {
+        color: var(--red);
+      }
+      .decision {
+        margin-top: 10px;
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 13px;
+        color: rgba(237, 242, 247, 0.78);
+        line-height: 1.7;
+      }
+      .timer {
+        margin-top: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .timer svg {
+        width: 34px;
+        height: 34px;
+      }
+      .timer .tlabel {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: rgba(237, 242, 247, 0.6);
+      }
+      .ring {
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        animation: ring 2.2s linear infinite;
+      }
+      @keyframes ring {
+        0% {
+          stroke-dashoffset: 0;
+        }
+        100% {
+          stroke-dashoffset: 90;
+        }
+      }
+
+      /* [6] How It Works */
+      .how {
+        padding: 120px 0;
+        background: var(--bg-panel);
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+      .how-head {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 38px;
+      }
+      .how .h2 {
+        font-size: 64px;
+        margin: 0;
+      }
+      .steps {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+      }
+      .steps::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 20px;
+        height: 1px;
+        background-image: radial-gradient(
+          circle,
+          rgba(237, 242, 247, 0.3) 1px,
+          rgba(0, 0, 0, 0) 1.5px
+        );
+        background-size: 10px 1px;
+        opacity: 0.5;
+      }
+      .step {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        padding: 28px;
+        position: relative;
+      }
+      .step .num {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 48px;
+        color: var(--red);
+        text-shadow: 0 0 18px rgba(255, 26, 26, 0.25);
+        line-height: 1;
+      }
+      .step .title {
+        margin-top: 12px;
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 22px;
+        color: var(--white);
+        letter-spacing: 1px;
+      }
+      .step .body {
+        margin-top: 10px;
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      /* [7] Three Roles */
+      .roles {
+        padding: 120px 0;
+      }
+      .roles .h2 {
+        font-size: 64px;
+      }
+      .role-grid {
+        margin-top: 34px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+      }
+      .role {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        padding: 40px;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease,
+          border-color 0.2s ease;
+        min-height: 520px;
+      }
+      .role::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      .role .accent {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--amber);
+        transition: height 0.2s ease, opacity 0.2s ease;
+        opacity: 0.95;
+      }
+      .role .badge {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 4px;
+        color: rgba(237, 242, 247, 0.7);
+        text-transform: uppercase;
+      }
+      .role h3 {
+        margin: 14px 0 12px 0;
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 36px;
+        letter-spacing: 1px;
+      }
+      .role p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.7;
+      }
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 18px;
+      }
+      .tag {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 1px;
+        color: rgba(237, 242, 247, 0.7);
+        border: 1px solid var(--border);
+        padding: 6px 10px;
+        background: rgba(0, 0, 0, 0.08);
+      }
+      .difficulty {
+        margin-top: 18px;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 1px;
+      }
+      .role .icon {
+        width: 52px;
+        height: 52px;
+        margin-top: 10px;
+        color: var(--amber);
+      }
+
+      .role:hover {
+        transform: scale(1.02);
+      }
+      .role:hover::before {
+        opacity: 1;
+      }
+      .role:hover .accent {
+        height: 100%;
+        opacity: 0.05;
+      }
+
+      .role.citizen .accent {
+        background: var(--amber);
+      }
+      .role.citizen::before {
+        background: var(--amber);
+      }
+      .role.citizen:hover {
+        box-shadow: var(--glow-amber);
+      }
+      .role.citizen .difficulty {
+        color: var(--amber);
+      }
+      .role.citizen .icon {
+        color: var(--amber);
+      }
+
+      .role.coord {
+        transform: translateY(-10px);
+        min-height: 560px;
+      }
+      .role.coord .accent {
+        background: var(--red);
+      }
+      .role.coord::before {
+        background: var(--red);
+      }
+      .role.coord:hover {
+        box-shadow: var(--glow-red);
+      }
+      .role.coord .difficulty {
+        color: var(--red);
+      }
+      .popular {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: var(--red);
+        border: 1px solid rgba(255, 26, 26, 0.45);
+        padding: 6px 10px;
+        background: rgba(255, 26, 26, 0.06);
+        text-transform: uppercase;
+      }
+
+      .role.official .accent {
+        background: var(--blue);
+      }
+      .role.official::before {
+        background: var(--blue);
+      }
+      .role.official:hover {
+        box-shadow: var(--glow-blue);
+      }
+      .role.official .difficulty {
+        color: var(--blue);
+      }
+      .role.official .icon {
+        color: var(--blue);
+      }
+
+      /* [8] Scenarios Grid */
+      .scenarios {
+        padding: 120px 0;
+        background: var(--bg-panel);
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+      .scenarios h2 {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 64px;
+        margin: 0;
+        letter-spacing: 1px;
+      }
+      .scenarios .sub {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .tiles {
+        margin-top: 34px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 2px;
+      }
+      .tile {
+        aspect-ratio: 1 / 1;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        position: relative;
+        overflow: hidden;
+        cursor: inherit;
+        display: grid;
+        place-items: center;
+        transition: border-color 0.2s ease, transform 0.2s ease;
+      }
+      .tile-inner {
+        text-align: center;
+        padding: 18px;
+        display: grid;
+        gap: 10px;
+        place-items: center;
+        transition: transform 0.2s ease;
+      }
+      .emoji {
+        font-size: 48px;
+        line-height: 1;
+      }
+      .sname {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 20px;
+        color: var(--white);
+        letter-spacing: 1px;
+      }
+      .mech {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 9px;
+        letter-spacing: 2px;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .threat {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        padding: 6px 10px;
+        border: 1px solid var(--border);
+        color: rgba(237, 242, 247, 0.78);
+        background: rgba(0, 0, 0, 0.12);
+        text-transform: uppercase;
+      }
+      .threat.red {
+        border-color: rgba(255, 26, 26, 0.45);
+        color: var(--red);
+      }
+      .threat.amber {
+        border-color: rgba(255, 179, 0, 0.45);
+        color: var(--amber);
+      }
+      .threat.extreme {
+        border-color: rgba(255, 26, 26, 0.55);
+        color: var(--red);
+      }
+      .threat.extreme.blink {
+        animation: blink 1s steps(2, end) infinite;
+      }
+      .simulate {
+        position: absolute;
+        bottom: 14px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 3px;
+        color: var(--red);
+        opacity: 0;
+        transform: translateY(8px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+      .tile::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 26, 26, 0.15);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      .tile:hover::before {
+        opacity: 1;
+      }
+      .tile:hover {
+        border-color: var(--red);
+        transform: translateY(-1px);
+      }
+      .tile:hover .tile-inner {
+        transform: scale(1.03);
+      }
+      .tile:hover .simulate {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* [9] Hindsight Memory */
+      .memory {
+        padding: 120px 0;
+      }
+      .memory-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 56px;
+        align-items: start;
+      }
+      .memory .eyebrow {
+        color: var(--blue);
+      }
+      .memory .h2 {
+        font-size: 64px;
+      }
+      .bullets {
+        margin-top: 18px;
+        display: grid;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .bullets div::before {
+        content: "→ ";
+        color: var(--blue);
+      }
+      .powered {
+        margin-top: 18px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.12);
+        padding: 8px 12px;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .powered .hs {
+        color: var(--blue);
+        border: 1px solid rgba(0, 191, 255, 0.4);
+        padding: 2px 6px;
+      }
+
+      .profile {
+        background: var(--bg-card);
+        border: 1px solid var(--blue);
+        box-shadow: 0 0 26px rgba(0, 191, 255, 0.12);
+        padding: 32px;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+      }
+      .profile .title {
+        color: var(--blue);
+        font-size: 11px;
+        letter-spacing: 2px;
+      }
+      .divider {
+        height: 1px;
+        background: rgba(22, 32, 48, 0.9);
+        margin: 16px 0;
+      }
+      .rows {
+        display: grid;
+        gap: 10px;
+        font-size: 11px;
+        letter-spacing: 1px;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        color: rgba(237, 242, 247, 0.78);
+      }
+      .row span:first-child {
+        color: rgba(237, 242, 247, 0.6);
+      }
+      .pattern {
+        border: 1px solid rgba(255, 179, 0, 0.35);
+        background: rgba(255, 179, 0, 0.06);
+        padding: 12px;
+        color: rgba(237, 242, 247, 0.86);
+        font-size: 11px;
+        line-height: 1.6;
+      }
+      .pattern b {
+        color: var(--amber);
+        font-weight: 400;
+      }
+      .spark {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .spark .label {
+        font-size: 11px;
+        letter-spacing: 2px;
+        color: rgba(237, 242, 247, 0.65);
+      }
+      .spark svg {
+        width: 180px;
+        height: 40px;
+      }
+
+      /* [10] Social Proof */
+      .social {
+        padding: 80px 0;
+        background: var(--bg-panel);
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+      .social h2 {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 48px;
+        margin: 0 0 24px 0;
+        letter-spacing: 1px;
+      }
+      .quotes {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+      .quote {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        padding: 28px;
+      }
+      .quote .text {
+        font-style: italic;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+        margin: 0;
+      }
+      .quote .by {
+        margin-top: 16px;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: var(--white);
+      }
+      .quote .by span {
+        color: var(--muted);
+      }
+
+      /* [11] CTA */
+      .cta {
+        padding: 160px 0;
+        position: relative;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      .cta::before {
+        content: "";
+        position: absolute;
+        inset: -40%;
+        background: radial-gradient(
+          circle at center,
+          rgba(255, 26, 26, 0.08) 0%,
+          rgba(255, 26, 26, 0.02) 40%,
+          rgba(0, 0, 0, 0) 70%
+        );
+        opacity: 0.6;
+        animation: ctaPulse 4s ease-in-out infinite alternate;
+      }
+      @keyframes ctaPulse {
+        from {
+          transform: scale(1);
+        }
+        to {
+          transform: scale(1.08);
+        }
+      }
+      .cta-inner {
+        position: relative;
+        text-align: center;
+        z-index: 1;
+      }
+      .cta .eyebrow {
+        color: var(--red);
+      }
+      .cta h2 {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 96px;
+        line-height: 0.95;
+        margin: 18px 0 14px 0;
+        letter-spacing: 1px;
+      }
+      .cta h2 .red {
+        color: var(--red);
+        text-shadow: var(--glow-red);
+      }
+      .cta .sub {
+        margin: 0 auto;
+        max-width: 520px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.7;
+      }
+      .cta .buttons {
+        margin-top: 34px;
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .cta .note {
+        margin-top: 16px;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 1px;
+        color: var(--muted);
+      }
+
+      /* [12] Footer */
+      footer {
+        background: #020508;
+        padding: 60px 0 40px;
+        border-top: 1px solid var(--border);
+      }
+      .foot-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 24px;
+      }
+      .foot-logo {
+        font-family: "Bebas Neue", system-ui, sans-serif;
+        font-size: 20px;
+        letter-spacing: 2px;
+        color: var(--red);
+        text-shadow: 0 0 16px rgba(255, 26, 26, 0.25);
+      }
+      .foot-desc {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.7;
+        max-width: 420px;
+      }
+      .foot-powered {
+        margin-top: 12px;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: var(--muted);
+      }
+      .foot-col h4 {
+        margin: 0 0 12px 0;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 3px;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+      .foot-col a {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        padding: 7px 0;
+        transition: color 0.2s ease;
+      }
+      .foot-col a:hover {
+        color: var(--white);
+      }
+      .foot-bottom {
+        margin-top: 28px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .copyright {
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 1px;
+        color: var(--muted);
+      }
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: "Share Tech Mono", ui-monospace, monospace;
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: var(--red);
+        text-transform: uppercase;
+      }
+      .dotlive {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--red);
+        box-shadow: var(--glow-red);
+        animation: blink 1s steps(2, end) infinite;
+      }
+
+      /* Responsive */
+      @media (max-width: 1024px) {
+        .hero-line {
+          font-size: 80px;
+        }
+        .hero-grid {
+          grid-template-columns: 1fr;
+        }
+        .terminal {
+          display: none;
+        }
+        .role-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .role.official {
+          grid-column: 1 / -1;
+          min-height: auto;
+        }
+        .steps {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .steps::before {
+          display: none;
+        }
+        .tiles {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .quotes {
+          grid-template-columns: 1fr;
+        }
+        .problem-grid {
+          grid-template-columns: 1fr;
+        }
+        .memory-grid {
+          grid-template-columns: 1fr;
+        }
+        .foot-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .nav-links {
+          display: none;
+        }
+        .hero {
+          height: 100vh;
+        }
+        .hero-line {
+          font-size: 56px;
+        }
+        .hero-cta {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .btn-primary,
+        .btn-secondary {
+          width: 100%;
+          text-align: center;
+        }
+        .hero-mini {
+          gap: 18px;
+        }
+        .mini-stat {
+          min-width: 0;
+          padding-right: 14px;
+        }
+        .mini-num {
+          font-size: 28px;
+        }
+        .role-grid {
+          grid-template-columns: 1fr;
+        }
+        .role.coord {
+          transform: none;
+          min-height: auto;
+        }
+        .tiles {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .cta h2 {
+          font-size: 72px;
+        }
+        .foot-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          animation: none !important;
+          transition: none !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- [1] EMERGENCY BROADCAST BAR -->
+    <div class="broadcast" aria-label="Emergency broadcast bar">
+      <div class="marquee">
+        ⚠ ACTIVE CRISIS SIMULATION — AI DISASTER ENGINE ONLINE — MULTIPLE
+        SCENARIOS RUNNING — 2.4M LIVES SIMULATED — JOIN THE RESPONSE ⚠
+      </div>
+    </div>
+
+    <!-- [2] NAV -->
+    <header class="nav" id="top">
+      <div class="container nav-inner">
+        <a class="logo" href="#top">TERRA GUARD</a>
+        <nav class="nav-links" aria-label="Primary">
+          <a href="#how-it-works" data-section="how-it-works">HOW IT WORKS</a>
+          <a href="#roles" data-section="roles">ROLES</a>
+          <a href="#scenarios" data-section="scenarios">SCENARIOS</a>
+          <a href="#memory" data-section="memory">MEMORY</a>
+        </nav>
+        <a class="btn-enter" href="#" data-launch>ENTER SIMULATION</a>
+      </div>
+    </header>
+
+    <main>
+      <!-- [3] HERO -->
+      <section class="hero" aria-label="Hero">
+        <div class="hero-bg" aria-hidden="true"></div>
+        <div class="orb red" aria-hidden="true"></div>
+        <div class="orb blue" aria-hidden="true"></div>
+        <div class="orb amber" aria-hidden="true"></div>
+        <div class="radar" aria-hidden="true">
+          <div class="disk"></div>
+        </div>
+
+        <div class="container hero-inner">
+          <div class="hero-grid">
+            <div>
+              <div class="hero-label">
+                [ EMERGENCY RESPONSE SIMULATION PLATFORM ]
+              </div>
+
+              <div class="hero-headline">
+                <p class="hero-line">WHEN DISASTER</p>
+                <p class="hero-line">STRIKES</p>
+                <p class="hero-line">ARE YOU READY?</p>
+              </div>
+
+              <div class="hero-sub">
+                AI-powered disaster simulation where every decision has
+                consequences. Command real scenarios. Save lives. Learn what
+                actually works.
+              </div>
+
+              <div class="hero-cta">
+                <a class="btn-primary" href="#" data-launch>▶ ENTER SIMULATION</a>
+                <a class="btn-secondary" href="#how-it-works">WATCH DEMO →</a>
+              </div>
+
+              <div class="hero-mini" aria-label="Live mini stats">
+                <div class="mini-stat">
+                  <div
+                    class="mini-num"
+                    data-countup
+                    data-target="2400000"
+                    data-divisor="1000000"
+                    data-decimals="1"
+                    data-suffix="M"
+                  >
+                    0
+                  </div>
+                  <div class="mini-label">LIVES SIMULATED</div>
+                </div>
+                <div class="mini-stat">
+                  <div
+                    class="mini-num"
+                    data-countup
+                    data-target="847000"
+                    data-divisor="1000"
+                    data-decimals="0"
+                    data-suffix="K"
+                  >
+                    0
+                  </div>
+                  <div class="mini-label">DECISIONS ANALYZED</div>
+                </div>
+                <div class="mini-stat">
+                  <div
+                    class="mini-num"
+                    data-countup
+                    data-target="8"
+                    data-divisor="1"
+                    data-decimals="0"
+                    data-suffix=""
+                  >
+                    0
+                  </div>
+                  <div class="mini-label">DISASTER TYPES</div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="terminal" aria-label="Terminal window mock">
+              <div class="term-top">
+                <div class="dots" aria-hidden="true">
+                  <div class="dot red"></div>
+                  <div class="dot amber"></div>
+                  <div class="dot green"></div>
+                </div>
+                <div class="term-label">SCENARIO_ACTIVE.exe</div>
+              </div>
+              <div class="term-body" id="terminalBody" aria-live="polite">
+                <!-- typed by JS -->
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <!-- [4] LIVE STATS TICKER -->
+      <section class="ticker" aria-label="Live stats ticker">
+        <div class="ticker-row green" data-ticker>
+          <div class="track">
+            <span
+              >EARTHQUAKE / JAKARTA / 847 SAVED ▸ CYCLONE / MUMBAI / 1,203 SAVED
+              ▸ FLOOD / DELHI / 234 SAVED ▸ FIRE / CHENNAI / 512 SAVED ▸</span
+            >
+            <span
+              >EARTHQUAKE / JAKARTA / 847 SAVED ▸ CYCLONE / MUMBAI / 1,203 SAVED
+              ▸ FLOOD / DELHI / 234 SAVED ▸ FIRE / CHENNAI / 512 SAVED ▸</span
+            >
+          </div>
+        </div>
+        <div class="ticker-row amber" data-ticker>
+          <div class="track">
+            <span
+              >COMMANDER_4821: GRADE S ▸ COMMANDER_7734: GRADE A ▸ COMMANDER_0293:
+              GRADE B ▸ NEW RECORD: 2,847 XP ▸</span
+            >
+            <span
+              >COMMANDER_4821: GRADE S ▸ COMMANDER_7734: GRADE A ▸ COMMANDER_0293:
+              GRADE B ▸ NEW RECORD: 2,847 XP ▸</span
+            >
+          </div>
+        </div>
+      </section>
+
+      <!-- [5] THE PROBLEM -->
+      <section class="problem reveal" id="how-it-works" aria-label="The problem">
+        <div class="container">
+          <div class="problem-grid">
+            <div>
+              <div class="eyebrow">// THE PROBLEM</div>
+              <div class="h2">DISASTER TRAINING IS BROKEN</div>
+              <div class="p">
+                Traditional training is static. Watch a video. Take a quiz. Get
+                a certificate you'll forget in a week. Real disasters are
+                dynamic. They escalate. They surprise you. They punish hesitation
+                and reward fast, accurate decisions. Your training should too.
+              </div>
+
+              <div class="callouts">
+                <div class="callout">
+                  <div class="xmark">X</div>
+                  <div>Static videos with no consequences</div>
+                </div>
+                <div class="callout">
+                  <div class="xmark">X</div>
+                  <div>Quizzes that test memory, not judgment</div>
+                </div>
+                <div class="callout">
+                  <div class="xmark">X</div>
+                  <div>Zero feedback on real decision-making</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="compare reveal" aria-label="Before vs after card">
+              <div class="oldway">
+                <div class="label">OLD WAY</div>
+                <div class="progress" aria-hidden="true"></div>
+                <div class="mono">MODULE 3 OF 12</div>
+                <div class="mono">
+                  Q: What is the ICS command structure? (A/B/C/D)
+                </div>
+              </div>
+
+              <div class="vs"><span>VS</span></div>
+
+              <div class="newway">
+                <div class="label">TERRA GUARD</div>
+                <div class="decision">
+                  AFTERSHOCK IN 90 SECONDS. Grid C4 collapsing. 3 units
+                  available. 847 lives at risk. DECIDE.
+                </div>
+                <div class="timer" aria-label="Depleting timer ring">
+                  <svg viewBox="0 0 36 36" aria-hidden="true">
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="14"
+                      fill="none"
+                      stroke="rgba(237,242,247,0.12)"
+                      stroke-width="3"
+                    ></circle>
+                    <circle
+                      class="ring"
+                      cx="18"
+                      cy="18"
+                      r="14"
+                      fill="none"
+                      stroke="rgba(255,26,26,0.8)"
+                      stroke-width="3"
+                      stroke-dasharray="90"
+                      stroke-dashoffset="0"
+                      stroke-linecap="square"
+                    ></circle>
+                  </svg>
+                  <div class="tlabel">TIMER RING — DEPLETING</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [6] HOW IT WORKS -->
+      <section class="how" aria-label="How it works">
+        <div class="container">
+          <div class="how-head reveal">
+            <div class="eyebrow">// HOW IT WORKS</div>
+            <div class="h2">THE DISASTER IS ALIVE</div>
+          </div>
+
+          <div class="steps">
+            <div class="step reveal">
+              <div class="num">01</div>
+              <div class="title">AI GENERATES THE SCENARIO</div>
+              <div class="body">
+                Claude acts as the live disaster engine — not a script. Every
+                playthrough is unique. It reacts to you.
+              </div>
+            </div>
+            <div class="step reveal">
+              <div class="num">02</div>
+              <div class="title">YOU MAKE DECISIONS UNDER PRESSURE</div>
+              <div class="body">
+                30 seconds per round. 4 choices. Real consequences. Hesitate and
+                the AI escalates the chaos.
+              </div>
+            </div>
+            <div class="step reveal">
+              <div class="num">03</div>
+              <div class="title">THE DISASTER RESPONDS</div>
+              <div class="body">
+                Good choices save lives. Bad ones cascade. Surprise events hit
+                every 2–3 rounds. Nothing is scripted.
+              </div>
+            </div>
+            <div class="step reveal">
+              <div class="num">04</div>
+              <div class="title">AI DEBRIEFS YOUR PERFORMANCE</div>
+              <div class="body">
+                After 10 rounds, get a personalised after-action report. What
+                real protocols say. What it cost you. Your grade.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [7] THREE ROLES -->
+      <section class="roles" id="roles" aria-label="Three roles">
+        <div class="container">
+          <div class="reveal">
+            <div class="eyebrow">// CHOOSE YOUR COMMAND</div>
+            <div class="h2">CHOOSE YOUR COMMAND</div>
+          </div>
+
+          <div class="role-grid">
+            <article class="role citizen reveal">
+              <div class="accent" aria-hidden="true"></div>
+              <svg
+                class="icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M12 12.5c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4Z"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                />
+                <path
+                  d="M4.2 20.2c1.6-3.6 4.3-5.4 7.8-5.4s6.2 1.8 7.8 5.4"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="square"
+                />
+              </svg>
+              <div class="badge">ROLE_01 / CITIZEN</div>
+              <h3>SURVIVE</h3>
+              <p>
+                You are trapped. Make survival decisions in real time. Evacuate
+                or shelter? Call for help or help your neighbor? Every choice
+                affects you and those around you.
+              </p>
+              <div class="tags" aria-label="Citizen tags">
+                <span class="tag">EVACUATION LOGIC</span>
+                <span class="tag">FIRST AID</span>
+                <span class="tag">PERSONAL PROTOCOLS</span>
+              </div>
+              <div class="difficulty">DIFFICULTY: ★★☆</div>
+            </article>
+
+            <article class="role coord reveal">
+              <div class="accent" aria-hidden="true"></div>
+              <div class="popular">MOST POPULAR</div>
+              <svg
+                class="icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                style="color: var(--red)"
+              >
+                <path
+                  d="M4 20v-4.4c0-1.2 1-2.2 2.2-2.2h11.6c1.2 0 2.2 1 2.2 2.2V20"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="square"
+                />
+                <path
+                  d="M7.3 10.8 12 4.5l4.7 6.3"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="square"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M12 4.5v10.6"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="square"
+                />
+              </svg>
+              <div class="badge">ROLE_02 / RESCUE COORDINATOR</div>
+              <h3>COMMAND</h3>
+              <p>
+                3 ambulances. 2 rescue teams. 1 helicopter. 12 simultaneous
+                emergencies. Every second costs lives. Triage. Prioritise.
+                Deploy. Don't flinch.
+              </p>
+              <div class="tags" aria-label="Coordinator tags">
+                <span class="tag">RESOURCE ALLOCATION</span>
+                <span class="tag">ICS PROTOCOLS</span>
+                <span class="tag">TRIAGE</span>
+              </div>
+              <div class="difficulty">DIFFICULTY: ★★★</div>
+            </article>
+
+            <article class="role official reveal">
+              <div class="accent" aria-hidden="true"></div>
+              <svg
+                class="icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M6 10h12"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="square"
+                />
+                <path
+                  d="M6 14h12"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="square"
+                />
+                <path
+                  d="M8 9V6.5c0-.6.4-1 1-1h6c.6 0 1 .4 1 1V9"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="square"
+                />
+                <path
+                  d="M7 20h10"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="square"
+                />
+              </svg>
+              <div class="badge">ROLE_03 / OFFICIAL</div>
+              <h3>GOVERN</h3>
+              <p>
+                Issue warnings. Allocate budget. Coordinate 5 agencies. Manage
+                misinformation. The AI simulates a panicking public and political
+                pressure simultaneously.
+              </p>
+              <div class="tags" aria-label="Official tags">
+                <span class="tag">PUBLIC COMMS</span>
+                <span class="tag">BUDGET ALLOCATION</span>
+                <span class="tag">INTER-AGENCY</span>
+              </div>
+              <div class="difficulty">DIFFICULTY: ★★★</div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- [8] DISASTER SCENARIOS GRID -->
+      <section
+        class="scenarios reveal"
+        id="scenarios"
+        aria-label="Disaster scenarios grid"
+      >
+        <div class="container">
+          <h2>8 LIVE SCENARIOS</h2>
+          <div class="sub">AI-escalated. Never the same twice.</div>
+
+          <div class="tiles" role="list" aria-label="Scenarios">
+            <div class="tile" role="listitem" tabindex="0">
+              <div class="tile-inner">
+                <div class="emoji">🌍</div>
+                <div class="sname">EARTHQUAKE</div>
+                <div class="mech">Aftershock timer. Structural collapse cascade.</div>
+                <div class="threat red">HIGH THREAT</div>
+              </div>
+              <div class="simulate">[ SIMULATE ]</div>
+            </div>
+
+            <div class="tile" role="listitem" tabindex="0">
+              <div class="tile-inner">
+                <div class="emoji">🌊</div>
+                <div class="sname">FLASH FLOOD</div>
+                <div class="mech">Rising water. Roads cut off.</div>
+                <div class="threat red">HIGH THREAT</div>
+              </div>
+              <div class="simulate">[ SIMULATE ]</div>
+            </div>
+
+            <div class="tile" role="listitem" tabindex="0">
+              <div class="tile-inner">
+                <div class="emoji">🔥</div>
+                <div class="sname">URBAN FIRE</div>
+                <div class="mech">Wind shift. Spread modelling.</div>
+                <div class="threat extreme blink">EXTREME</div>
+              </div>
+              <div class="simulate">[ SIMULATE ]</div>
+            </div>
+
+            <div class="tile" role="listitem" tabindex="0">
+              <div class="tile-inner">
+                <div class="emoji">🌀</div>
+                <div class="sname">CYCLONE</div>
+                <div class="mech">Landfall countdown. Shelter overflow.</div>
+                <div class="threat extreme">EXTREME</div>
+              </div>
+              <div class="simulate">[ SIMULATE ]</div>
+            </div>
+
+            <div class="tile" role="listitem" tabindex="0">
+              <div class="tile-inner">
+                <div class="emoji">🦠</div>
+                <div class="sname">PANDEMIC</div>
+                <div class="mech">R-value spread. Hospital overflow.</div>
+                <div class="threat red">HIGH THREAT</div>
+              </div>
+              <div class="simulate">[ SIMULATE ]</div>
+            </div>
+
+            <div class="tile" role="listitem" tabindex="0">
+              <div class="tile-inner">
+                <div class="emoji">☣</div>
+                <div class="sname">CHEMICAL SPILL</div>
+                <div class="mech">Plume direction. Evacuation zones.</div>
+                <div class="threat red">HIGH THREAT</div>
+              </div>
+              <div class="simulate">[ SIMULATE ]</div>
+            </div>
+
+            <div class="tile" role="listitem" tabindex="0">
+              <div class="tile-inner">
+                <div class="emoji">🌊</div>
+                <div class="sname">TSUNAMI</div>
+                <div class="mech">Wave ETA. Coastal triage.</div>
+                <div class="threat extreme">EXTREME</div>
+              </div>
+              <div class="simulate">[ SIMULATE ]</div>
+            </div>
+
+            <div class="tile" role="listitem" tabindex="0">
+              <div class="tile-inner">
+                <div class="emoji">⚡</div>
+                <div class="sname">POWER GRID</div>
+                <div class="mech">Cascading outages. Hospital backup.</div>
+                <div class="threat amber">MEDIUM</div>
+              </div>
+              <div class="simulate">[ SIMULATE ]</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- [9] HINDSIGHT MEMORY FEATURE -->
+      <section class="memory reveal" id="memory" aria-label="Memory feature">
+        <div class="container">
+          <div class="memory-grid">
+            <div>
+              <div class="eyebrow">// POWERED BY HINDSIGHT MEMORY</div>
+              <div class="h2">IT REMEMBERS YOU</div>
+              <div class="p" style="font-size: 14px; max-width: 560px">
+                Most simulations forget you the moment you close the tab. Crisis
+                Command doesn't. Across every session, it builds a profile of
+                how you make decisions — where you hesitate, what patterns cost
+                lives, how you've improved. Your debrief gets sharper every time
+                you play.
+              </div>
+
+              <div class="bullets" aria-label="Memory bullets">
+                <div>Cross-session pattern detection</div>
+                <div>Personalized debrief reports that reference your history</div>
+                <div>Commander profile: your evolving decision-making fingerprint</div>
+              </div>
+
+              <div class="powered" aria-label="Powered by badge">
+                <span class="hs">H</span>
+                <span>Powered by Hindsight Memory Engine</span>
+              </div>
+            </div>
+
+            <aside class="profile" aria-label="Commander profile card">
+              <div class="title">COMMANDER #4821 — PROFILE REPORT</div>
+              <div class="divider"></div>
+
+              <div class="rows">
+                <div class="row">
+                  <span>SESSIONS COMPLETED</span><span>12</span>
+                </div>
+                <div class="row">
+                  <span>TOTAL LIVES SAVED</span><span>8,492</span>
+                </div>
+                <div class="row">
+                  <span>FAVORITE ROLE</span><span>COORDINATOR</span>
+                </div>
+                <div class="row">
+                  <span>WEAKEST SCENARIO</span><span>TSUNAMI</span>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+              <div class="pattern">
+                <b>⚠ PATTERN DETECTED</b><br />
+                You consistently delay evacuation orders in rounds 3–4. This
+                pattern has cost an estimated 340 lives across sessions.
+                Recommend: Earthquake scenario, Coordinator role.
+              </div>
+
+              <div class="divider"></div>
+              <div class="spark" aria-label="Improvement trend sparkline">
+                <div class="label">IMPROVEMENT TREND</div>
+                <svg viewBox="0 0 180 40" role="img" aria-label="XP sparkline">
+                  <polyline
+                    points="0,30 20,28 40,29 60,24 80,26 100,20 140,16 180,10"
+                    fill="none"
+                    stroke="rgba(0,255,127,0.9)"
+                    stroke-width="2"
+                    stroke-linecap="square"
+                    stroke-linejoin="round"
+                  />
+                  <circle cx="180" cy="10" r="2.5" fill="rgba(0,255,127,0.95)" />
+                </svg>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <!-- [10] SOCIAL PROOF / TESTIMONIALS -->
+      <section class="social" aria-label="Social proof">
+        <div class="container">
+          <h2 class="reveal">FROM THE COMMAND LOG</h2>
+          <div class="quotes">
+            <figure class="quote reveal">
+              <blockquote class="text">
+                “Round 6. Three ambulances, twelve emergencies, sixty seconds. I
+                made the wrong call and lost 200 lives. I understood triage for
+                the first time.”
+              </blockquote>
+              <figcaption class="by">
+                Commander #2291, <span>Rescue Coordinator, Delhi</span>
+              </figcaption>
+            </figure>
+            <figure class="quote reveal">
+              <blockquote class="text">
+                “The AI remembered I always hesitate on shelter-in-place. Round
+                4 it called me out on it. That's not a game. That's actual
+                training.”
+              </blockquote>
+              <figcaption class="by">
+                Commander #7734, <span>Citizen Mode, Mumbai</span>
+              </figcaption>
+            </figure>
+            <figure class="quote reveal">
+              <blockquote class="text">
+                “I'm an NGO field coordinator. I've done actual ICS training.
+                This caught gaps that the certification didn't.”
+              </blockquote>
+              <figcaption class="by">
+                Commander #0847, <span>Official Mode, Bangalore</span>
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- [11] CTA SECTION -->
+      <section class="cta reveal" aria-label="CTA">
+        <div class="container cta-inner">
+          <div class="eyebrow">// THE SIMULATION IS LIVE</div>
+          <h2>
+            YOUR CITY NEEDS<br />
+            <span class="red">A COMMANDER</span>
+          </h2>
+          <p class="sub">
+            Ten rounds. Real AI. Real consequences. Find out if you're ready
+            before it actually matters.
+          </p>
+          <div class="buttons">
+            <a class="btn-primary" href="#" data-launch>▶ START SIMULATION — FREE</a>
+            <a class="btn-secondary" href="#roles">EXPLORE ROLES →</a>
+          </div>
+          <div class="note">No signup. No download. Runs in your browser.</div>
+        </div>
+      </section>
+
+      <!-- [12] FOOTER -->
+      <footer aria-label="Footer">
+        <div class="container">
+          <div class="foot-grid reveal">
+            <div>
+              <div class="foot-logo">TERRA GUARD</div>
+              <div class="foot-desc">
+                AI-powered disaster simulation. Built for the next generation of
+                emergency responders.
+              </div>
+              <div class="foot-powered">Powered by Gemini + Hindsight</div>
+            </div>
+
+            <div class="foot-col">
+              <h4>SIMULATE</h4>
+              <a href="#scenarios">Earthquake</a>
+              <a href="#scenarios">Flood</a>
+              <a href="#scenarios">Cyclone</a>
+              <a href="#scenarios">Pandemic</a>
+            </div>
+
+            <div class="foot-col">
+              <h4>ROLES</h4>
+              <a href="#roles">Citizen</a>
+              <a href="#roles">Coordinator</a>
+              <a href="#roles">Official</a>
+            </div>
+
+            <div class="foot-col">
+              <h4>PLATFORM</h4>
+              <a href="#how-it-works">How It Works</a>
+              <a href="#" data-launch>Leaderboard</a>
+              <a href="#memory">Memory System</a>
+              <a href="#" data-launch>GitHub</a>
+            </div>
+          </div>
+
+          <div class="foot-bottom">
+            <div class="copyright">
+              © 2025 Terra Guard. Built for emergency preparedness.
+            </div>
+            <div class="status">
+              <span class="dotlive" aria-hidden="true"></span>
+              <span>SIMULATION ACTIVE</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <script>
+      (function () {
+        const prefersReduced =
+          window.matchMedia &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        function easeOutCubic(t) {
+          return 1 - Math.pow(1 - t, 3);
+        }
+
+        function formatNumber(value, decimals) {
+          const fixed = value.toFixed(decimals);
+          if (decimals > 0) return fixed.replace(/\.0+$/, "");
+          return fixed;
+        }
+
+        function countUp(el, durationMs) {
+          const target = Number(el.getAttribute("data-target") || "0");
+          const suffix = el.getAttribute("data-suffix") || "";
+          const divisor = Number(el.getAttribute("data-divisor") || "1");
+          const decimals = Number(el.getAttribute("data-decimals") || "0");
+
+          const start = performance.now();
+          function frame(now) {
+            const p = Math.min(1, (now - start) / durationMs);
+            const eased = easeOutCubic(p);
+            const current = (target / divisor) * eased;
+            el.textContent = formatNumber(current, decimals) + suffix;
+            if (p < 1) requestAnimationFrame(frame);
+            else el.textContent = formatNumber(target / divisor, decimals) + suffix;
+          }
+          requestAnimationFrame(frame);
+        }
+
+        function setupCountups() {
+          const els = Array.from(document.querySelectorAll("[data-countup]"));
+          if (els.length === 0) return;
+
+          const seen = new WeakSet();
+          const io = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((e) => {
+                if (!e.isIntersecting) return;
+                const el = e.target;
+                if (seen.has(el)) return;
+                seen.add(el);
+                countUp(el, 2000);
+              });
+            },
+            { threshold: 0.2 }
+          );
+          els.forEach((el) => io.observe(el));
+        }
+
+        function setupTypewriter() {
+          const host = document.getElementById("terminalBody");
+          if (!host) return;
+          const lines = [
+            { text: "> INITIATING EARTHQUAKE PROTOCOL...", cls: "amber" },
+            { text: "> SECTOR 4: STRUCTURAL COLLAPSE", cls: "red" },
+            { text: "> DEPLOYING UNIT ALPHA TO GRID C3", cls: "green" },
+            { text: "> LIVES AT RISK: 1,247", cls: "white" },
+            { text: "> AFTERSHOCK DETECTED — ETA 2MIN", cls: "red blink" },
+            { text: "> RESOURCE ALLOCATION: 73%", cls: "amber" },
+            { text: "> AWAITING COMMANDER DECISION...", cls: "green" },
+            { text: "> _", cls: "white" },
+          ];
+
+          const charDelay = prefersReduced ? 0 : 80;
+          const linePause = prefersReduced ? 0 : 400;
+          const loopPause = prefersReduced ? 0 : 1200;
+
+          let stop = false;
+
+          function sleep(ms) {
+            return new Promise((r) => setTimeout(r, ms));
+          }
+
+          async function typeLine(text, el) {
+            el.textContent = "";
+            for (let i = 0; i < text.length; i++) {
+              if (stop) return;
+              el.textContent += text[i];
+              if (charDelay) await sleep(charDelay);
+            }
+          }
+
+          async function run() {
+            while (!stop) {
+              host.innerHTML = "";
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const div = document.createElement("div");
+                div.className = "term-line " + (line.cls || "");
+                host.appendChild(div);
+
+                if (line.text.trim() === "> _") {
+                  div.textContent = "> ";
+                  const cur = document.createElement("span");
+                  cur.className = "cursor blink";
+                  cur.textContent = "_";
+                  div.appendChild(cur);
+                } else {
+                  await typeLine(line.text, div);
+                }
+
+                if (linePause) await sleep(linePause);
+              }
+              if (loopPause) await sleep(loopPause);
+            }
+          }
+          run();
+          window.addEventListener("beforeunload", () => {
+            stop = true;
+          });
+        }
+
+        function setupRevealObserver() {
+          const els = Array.from(document.querySelectorAll(".reveal"));
+          if (els.length === 0) return;
+          const io = new IntersectionObserver(
+            (entries) => {
+              entries.forEach((e) => {
+                if (e.isIntersecting) e.target.classList.add("visible");
+              });
+            },
+            { threshold: 0.2 }
+          );
+          els.forEach((el) => io.observe(el));
+        }
+
+        function setupNavScroll() {
+          const nav = document.querySelector(".nav");
+          function onScroll() {
+            if (!nav) return;
+            if (window.scrollY > 60) nav.classList.add("scrolled");
+            else nav.classList.remove("scrolled");
+          }
+          onScroll();
+          window.addEventListener("scroll", onScroll, { passive: true });
+
+          document.querySelectorAll('a[href^="#"]').forEach((a) => {
+            a.addEventListener("click", (ev) => {
+              const href = a.getAttribute("href");
+              if (!href || href === "#") return;
+              const target = document.querySelector(href);
+              if (!target) return;
+              ev.preventDefault();
+              target.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+          });
+        }
+
+        function setupActiveNav() {
+          const links = Array.from(document.querySelectorAll(".nav-links a[data-section]"));
+          const linkById = new Map(links.map((a) => [a.getAttribute("data-section"), a]));
+          const ids = Array.from(linkById.keys());
+          const sections = ids
+            .map((id) => document.getElementById(id))
+            .filter(Boolean);
+
+          if (sections.length === 0) return;
+          const setActive = (id) => {
+            links.forEach((a) => a.classList.remove("active"));
+            const a = linkById.get(id);
+            if (a) a.classList.add("active");
+          };
+
+          const io = new IntersectionObserver(
+            (entries) => {
+              const visible = entries
+                .filter((e) => e.isIntersecting)
+                .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+              if (visible && visible.target && visible.target.id) setActive(visible.target.id);
+            },
+            { threshold: [0.2, 0.35, 0.5], rootMargin: "-20% 0px -60% 0px" }
+          );
+          sections.forEach((s) => io.observe(s));
+        }
+
+        function setupTickerHover() {
+          const rows = Array.from(document.querySelectorAll("[data-ticker]"));
+          rows.forEach((row) => {
+            row.addEventListener("mouseenter", () => row.classList.add("paused"));
+            row.addEventListener("mouseleave", () => row.classList.remove("paused"));
+          });
+        }
+
+        function setupLaunchButtons() {
+          document.querySelectorAll("[data-launch]").forEach((el) => {
+            el.addEventListener("click", (ev) => {
+              ev.preventDefault();
+              console.log("Launching simulation...");
+              // If/when deployed, swap to: window.location.href = "/index.html";
+            });
+          });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+          setupCountups();
+          setupTypewriter();
+          setupRevealObserver();
+          setupNavScroll();
+          setupActiveNav();
+          setupTickerHover();
+          setupLaunchButtons();
+        });
+      })();
+    </script>
+  </body>
+</html>
+

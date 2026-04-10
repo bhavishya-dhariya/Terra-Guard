@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+:root {
+  --bg-base: #050a0e;
+  --bg-surface: #0c1520;
+  --bg-elevated: #132030;
+  --accent-red: #ff2d2d;
+  --accent-amber: #ffb800;
+  --accent-green: #00ff88;
+  --accent-blue: #00aaff;
+  --text-primary: #e8edf2;
+  --text-secondary: #7a8fa6;
+  --text-muted: #3d5166;
+  --border: #1a2d40;
+  --glow-red: 0 0 20px rgba(255, 45, 45, 0.4);
+  --glow-green: 0 0 20px rgba(0, 255, 136, 0.4);
+  --glow-amber: 0 0 20px rgba(255, 184, 0, 0.4);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: "IBM Plex Sans", system-ui, -apple-system, Segoe UI, Roboto,
+    Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: var(--accent-red);
+  color: #fff;
+}
+
+/* Scanlines overlay across entire app */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.03;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 3px,
+    rgba(0, 0, 0, 0.14) 4px
+  );
+  mix-blend-mode: overlay;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.15;
+  }
+}
+
+.page-in {
+  animation: fadeIn 300ms ease forwards;
+}
+.page-out {
+  animation: fadeOut 300ms ease forwards;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
